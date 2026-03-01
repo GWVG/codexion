@@ -3,8 +3,8 @@
 
 #include <pthread.h>
 
-#define SCHED_FIFO 0
-#define SCHED_EDF 1
+#define CODX_SCHED_FIFO 0
+#define CODX_SCHED_EDF 1
 
 typedef struct s_coder t_coder;
 typedef struct s_dongle t_dongle;
@@ -27,7 +27,11 @@ typedef struct s_sim
 	t_dongle *dongles;
 } t_sim;
 
-int sim_init_dongles(t_sim *sim, int heap_capacity);
+void sim_init(t_sim *sim, int *v);
+int sim_init_sync(t_sim *sim);
+void sim_destroy_sync(t_sim *sim);
+void sim_mark_start(t_sim *sim);
+int sim_init_dongles(t_sim *sim);
 void sim_destroy_dongles(t_sim *sim);
 
 #endif

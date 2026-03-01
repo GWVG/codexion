@@ -3,12 +3,64 @@
 #include "dongle.h"
 
 #include <stdlib.h>
+#include <sys/time.h>
 
-int sim_init_dongles(t_sim *sim, int heap_capacity)
+void sim_init(t_sim *sim, int *v)
+{
+    if (!sim || !v)
+        return;
+    sim->scheduler = v[0];
+    sim->coder_count = v[1];
+    sim->time_to_burnout_ms = (long)v[2];
+    sim->time_to_compile_ms = (long)v[3];
+    sim->time_to_debug_ms = (long)v[4];
+    sim->time_to_refactor_ms = (long)v[5];
+    sim->required_compiles = v[6];
+    sim->dongle_cooldown_ms = (long)v[7];
+    sim->start_ms = 0;
+    sim->stop = 0;
+    sim->coders = NULL;
+    sim->dongles = NULL;
+}
+
+int sim_init_sync(t_sim *sim)
+{
+    if (!sim)
+        return (0);
+    sim->stop = 0;
+    if (pthread_mutex_init(&sim->stop_mutex, NULL) != 0)
+        return (0);
+    if (pthread_mutex_init(&sim->print_mutex, NULL) != 0)
+    {
+        pthread_mutex_destroy(&sim->stop_mutex);
+        return (0);
+    }
+    return (1);
+}
+
+void sim_destroy_sync(t_sim *sim)
+{
+    if (!sim)
+        return;
+    pthread_mutex_destroy(&sim->print_mutex);
+    pthread_mutex_destroy(&sim->stop_mutex);
+}
+
+void sim_mark_start(t_sim *sim)
+{
+    struct timeval tv;
+
+    if (!sim)
+        return;
+    gettimeofday(&tv, NULL);
+    sim->start_ms = (tv.tv_sec * 1000L) + (tv.tv_usec / 1000L);
+}
+
+int sim_init_dongles(t_sim *sim)
 {
     int i;
 
-    if (!sim || sim->coder_count <= 0 || heap_capacity <= 0)
+    if (!sim || sim->coder_count <= 0)
         return (0);
     sim->dongles = (t_dongle *)malloc(sizeof(t_dongle) * sim->coder_count);
     if (!sim->dongles)
@@ -16,7 +68,7 @@ int sim_init_dongles(t_sim *sim, int heap_capacity)
     i = 0;
     while (i < sim->coder_count)
     {
-        if (!dongle_init(&sim->dongles[i], heap_capacity))
+        if (!dongle_init(&sim->dongles[i], sim->coder_count))
         {
             while (--i >= 0)
                 dongle_destroy(&sim->dongles[i]);
