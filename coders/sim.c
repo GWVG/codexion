@@ -1,5 +1,6 @@
 #include "sim.h"
 
+#include "coder.h"
 #include "dongle.h"
 
 #include <stdlib.h>
@@ -62,7 +63,7 @@ int sim_init_dongles(t_sim *sim)
 
     if (!sim || sim->coder_count <= 0)
         return (0);
-    sim->dongles = (t_dongle *)malloc(sizeof(t_dongle) * sim->coder_count);
+    sim->dongles = malloc(sizeof(t_dongle) * sim->coder_count);
     if (!sim->dongles)
         return (0);
     i = 0;
@@ -95,4 +96,52 @@ void sim_destroy_dongles(t_sim *sim)
     }
     free(sim->dongles);
     sim->dongles = NULL;
+}
+
+int sim_init_coders(t_sim *sim)
+{
+    int i;
+
+    if (!sim || !sim->dongles || sim->coder_count <= 0)
+        return (0);
+    sim->coders = malloc(sizeof(t_coder) * sim->coder_count);
+    if (!sim->coders)
+        return (0);
+    i = 0;
+    while (i < sim->coder_count)
+    {
+        sim->coders[i].id = i + 1;
+        sim->coders[i].last_compile_start_ms = sim->start_ms;
+        sim->coders[i].compile_count = 0;
+        sim->coders[i].compiling = 0;
+        sim->coders[i].sim = sim;
+        sim->coders[i].left_dongle = &sim->dongles[i];
+        sim->coders[i].right_dongle = &sim->dongles[(i + 1) % sim->coder_count];
+        if (pthread_mutex_init(&sim->coders[i].state_mutex, NULL) != 0)
+        {
+            while (--i >= 0)
+                pthread_mutex_destroy(&sim->coders[i].state_mutex);
+            free(sim->coders);
+            sim->coders = NULL;
+            return (0);
+        }
+        i++;
+    }
+    return (1);
+}
+
+void sim_destroy_coders(t_sim *sim)
+{
+    int i;
+
+    if (!sim || !sim->coders || sim->coder_count <= 0)
+        return;
+    i = 0;
+    while (i < sim->coder_count)
+    {
+        pthread_mutex_destroy(&sim->coders[i].state_mutex);
+        i++;
+    }
+    free(sim->coders);
+    sim->coders = NULL;
 }

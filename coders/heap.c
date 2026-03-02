@@ -60,7 +60,7 @@ int heap_init(t_heap *heap, int capacity)
 {
     if (!heap || capacity <= 0)
         return (0);
-    heap->data = (t_heap_node *)malloc(sizeof(t_heap_node) * capacity);
+    heap->data = malloc(sizeof(t_heap_node) * capacity);
     if (!heap->data)
         return (0);
     heap->size = 0;

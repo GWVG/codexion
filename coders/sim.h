@@ -21,6 +21,7 @@ typedef struct s_sim
 	int required_compiles;
 	long start_ms;
 	int stop;
+	pthread_t monitor_thread;
 	pthread_mutex_t stop_mutex;
 	pthread_mutex_t print_mutex;
 	t_coder *coders;
@@ -33,5 +34,7 @@ void sim_destroy_sync(t_sim *sim);
 void sim_mark_start(t_sim *sim);
 int sim_init_dongles(t_sim *sim);
 void sim_destroy_dongles(t_sim *sim);
+int sim_init_coders(t_sim *sim);
+void sim_destroy_coders(t_sim *sim);
 
 #endif

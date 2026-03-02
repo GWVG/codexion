@@ -81,11 +81,8 @@ static void heap_remove_waiter(t_heap *heap, t_waiter me)
         return;
     i = 0;
     while (i < heap->size)
-    {
-        if (node_is_me(heap->data[i], me))
+        if (node_is_me(heap->data[i++], me))
             break;
-        i++;
-    }
     if (i >= heap->size)
         return;
     heap->size--;
@@ -106,16 +103,9 @@ int dongle_init(t_dongle *d, int capacity)
     if (pthread_mutex_init(&d->mtx, NULL))
         return (0);
     if (pthread_cond_init(&d->cv, NULL))
-    {
-        pthread_mutex_destroy(&d->mtx);
-        return (0);
-    }
+        return (pthread_mutex_destroy(&d->mtx), 0);
     if (!heap_init(&d->wait_q, capacity))
-    {
-        pthread_cond_destroy(&d->cv);
-        pthread_mutex_destroy(&d->mtx);
-        return (0);
-    }
+        return (pthread_cond_destroy(&d->cv), pthread_mutex_destroy(&d->mtx), 0);
     d->available = 1;
     d->cooldown_until_ms = 0;
     d->arrival_seq = 0;
@@ -132,10 +122,7 @@ int dongle_take(t_sim *sim, t_dongle *d, t_waiter me)
     pthread_mutex_lock(&d->mtx);
     // put coder on the wait_q
     if (!heap_push(&d->wait_q, waiter_to_node(me)))
-    {
-        pthread_mutex_unlock(&d->mtx);
-        return (0);
-    }
+        return (pthread_mutex_unlock(&d->mtx), 0);
     // check until coder is at the top of the wait_q
     while (!sim_should_stop(sim))
     {
@@ -146,16 +133,11 @@ int dongle_take(t_sim *sim, t_dongle *d, t_waiter me)
     }
     // check for early stop
     if (sim_should_stop(sim))
-    {
-        heap_remove_waiter(&d->wait_q, me);
-        pthread_mutex_unlock(&d->mtx);
-        return (0);
-    }
+        return (heap_remove_waiter(&d->wait_q, me), pthread_mutex_unlock(&d->mtx), 0);
     // remove coder from wait_q and take dongle
     heap_pop(&d->wait_q, &top);
     d->available = 0;
-    pthread_mutex_unlock(&d->mtx);
-    return (1);
+    return (pthread_mutex_unlock(&d->mtx), 1);
 }
 
 void dongle_release(t_sim *sim, t_dongle *d)
