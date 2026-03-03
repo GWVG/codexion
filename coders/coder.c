@@ -2,6 +2,7 @@
 
 #include "dongle.h"
 #include "log.h"
+#include "sim.h"
 #include "sim_stop.h"
 #include "time.h"
 
@@ -28,10 +29,20 @@ static long coder_deadline_ms(t_coder *coder)
 static t_waiter coder_make_waiter(t_coder *coder, t_dongle *dongle)
 {
     t_waiter waiter;
+    long arrival_seq;
 
+    arrival_seq = (long)coder_next_arrival_seq(dongle);
     waiter.coder_id = coder->id;
-    waiter.key_primary = coder->sim->scheduler * coder_deadline_ms(coder);
-    waiter.key_secondary = coder_next_arrival_seq(dongle);
+    if (coder->sim->scheduler == CODX_SCHED_EDF)
+    {
+        waiter.key_primary = coder_deadline_ms(coder);
+        waiter.key_secondary = arrival_seq;
+    }
+    else
+    {
+        waiter.key_primary = arrival_seq;
+        waiter.key_secondary = coder->id;
+    }
     return (waiter);
 }
 

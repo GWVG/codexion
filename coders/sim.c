@@ -98,6 +98,22 @@ void sim_destroy_dongles(t_sim *sim)
     sim->dongles = NULL;
 }
 
+void sim_wake_all_dongles(t_sim *sim)
+{
+    int i;
+
+    if (!sim || !sim->dongles || sim->coder_count <= 0)
+        return;
+    i = 0;
+    while (i < sim->coder_count)
+    {
+        pthread_mutex_lock(&sim->dongles[i].mtx);
+        pthread_cond_broadcast(&sim->dongles[i].cv);
+        pthread_mutex_unlock(&sim->dongles[i].mtx);
+        i++;
+    }
+}
+
 int sim_init_coders(t_sim *sim)
 {
     int i;

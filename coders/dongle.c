@@ -75,21 +75,21 @@ static void sift_down_local(t_heap *heap, int i)
 static void heap_remove_waiter(t_heap *heap, t_waiter me)
 {
     int i;
-    t_heap_node last;
 
     if (!heap || !heap->data || heap->size <= 0)
         return;
     i = 0;
     while (i < heap->size)
-        if (node_is_me(heap->data[i++], me))
+    {
+        if (node_is_me(heap->data[i], me))
             break;
+        i++;
+    }
     if (i >= heap->size)
         return;
-    heap->size--;
-    if (i == heap->size)
+    if (i == --heap->size)
         return;
-    last = heap->data[heap->size];
-    heap->data[i] = last;
+    heap->data[i] = heap->data[heap->size];
     if (i > 0 && node_before(heap->data[i], heap->data[(i - 1) / 2]))
         sift_up_local(heap, i);
     else
@@ -129,7 +129,9 @@ int dongle_take(t_sim *sim, t_dongle *d, t_waiter me)
         is_top = heap_peek(&d->wait_q, &top) && node_is_me(top, me);
         if (d->available && now_ms() >= d->cooldown_until_ms && is_top)
             break;
-        pthread_cond_wait(&d->cv, &d->mtx);
+        pthread_mutex_unlock(&d->mtx);
+        sleep_ms_precise(sim, 1);
+        pthread_mutex_lock(&d->mtx);
     }
     // check for early stop
     if (sim_should_stop(sim))

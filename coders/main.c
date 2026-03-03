@@ -2,6 +2,7 @@
 #include "coder.h"
 #include "monitor.h"
 #include "sim_stop.h"
+#include "time.h"
 
 #include <string.h>
 
@@ -17,7 +18,8 @@ static int cleanup_all(t_sim *sim, int count, int error_code)
     cleanup_stack[2] = sim_destroy_coders;
     cleanup_stack[3] = monitor_join_thread;
     cleanup_stack[4] = coder_join_threads;
-    sim_set_stop(sim);
+    if (error_code)
+        sim_set_stop(sim);
     while (--count >= 0)
         cleanup_stack[count](sim);
     return (error_code);
@@ -45,6 +47,9 @@ int main(int ac, char **av)
     while (++i <= 4)
         if (!init_stack[i - 1](&sim))
             return (cleanup_all(&sim, i, 1));
+
+    while (!sim_should_stop(&sim))
+        sleep_ms_precise(&sim, 1);
 
     return (cleanup_all(&sim, i, 0));
 }

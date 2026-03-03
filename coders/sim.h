@@ -34,6 +34,7 @@ void sim_destroy_sync(t_sim *sim);
 void sim_mark_start(t_sim *sim);
 int sim_init_dongles(t_sim *sim);
 void sim_destroy_dongles(t_sim *sim);
+void sim_wake_all_dongles(t_sim *sim);
 int sim_init_coders(t_sim *sim);
 void sim_destroy_coders(t_sim *sim);
 
